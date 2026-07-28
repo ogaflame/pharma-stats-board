@@ -49,7 +49,7 @@ const INDICATORS = [
     id: 'yakuzaishi',
     label: '届出薬剤師数',
     statsCode: '00450026',
-    searchWord: '薬剤師数 業務の種別',
+    searchWord: '薬剤師数',
     titleMustInclude: ['薬剤師数', '業務の種別'],
     titleMustExclude: ['薬局', '医療施設従事'],
     mode: 'total',
@@ -58,7 +58,7 @@ const INDICATORS = [
     id: 'yakkyoku_juji',
     label: '薬局従事薬剤師数',
     statsCode: '00450026',
-    searchWord: '薬局 医療施設従事薬剤師数 年次推移',
+    searchWord: '薬局 薬剤師数',
     titleMustInclude: ['薬局', '医療施設従事薬剤師数', '年次推移'],
     mode: 'total',
   },
@@ -77,7 +77,7 @@ const INDICATORS = [
     id: 'shussho',
     label: '出生数',
     statsCode: '00450011',
-    searchWord: '出生数 年次推移',
+    searchWord: '出生数',
     titleMustInclude: ['出生数'],
     titleMustExclude: ['都道府県', '週数'],
     mode: 'total',
@@ -86,7 +86,7 @@ const INDICATORS = [
     id: 'tfr',
     label: '合計特殊出生率',
     statsCode: '00450011',
-    searchWord: '合計特殊出生率 年次推移',
+    searchWord: '合計特殊出生率',
     titleMustInclude: ['合計特殊出生率'],
     titleMustExclude: ['都道府県'],
     mode: 'total',
@@ -153,12 +153,18 @@ function parseNum(s) {
 // 統計表の検索・絞り込み（公開日が最新のものを採用）
 // ============================================================
 async function findBestTable(ind) {
-  const json = await estatGet('getStatsList', {
-    appId: APP_ID,
-    statsCode: ind.statsCode,
-    searchWord: ind.searchWord,
-    limit: 1000,
-  });
+  let json;
+  try {
+    json = await estatGet('getStatsList', {
+      appId: APP_ID,
+      statsCode: ind.statsCode,
+      searchWord: ind.searchWord,
+      limit: 1000,
+    });
+  } catch (e) {
+    console.warn(`  ⚠ 検索結果が0件（searchWord="${ind.searchWord}"）: ${e.message}`);
+    return null;
+  }
   const list = json.GET_STATS_LIST;
   if (!list || !list.DATALIST_INF) return null;
 
@@ -313,9 +319,17 @@ async function listCandidates(indicatorId) {
   }
   console.log(`=== ${ind.label}（searchWord="${ind.searchWord}"）の候補表 ===\n`);
 
-  const json = await estatGet('getStatsList', {
-    appId: APP_ID, statsCode: ind.statsCode, searchWord: ind.searchWord, limit: 1000,
-  });
+  let json;
+  try {
+    json = await estatGet('getStatsList', {
+      appId: APP_ID, statsCode: ind.statsCode, searchWord: ind.searchWord, limit: 1000,
+    });
+  } catch (e) {
+    console.log(`検索結果が0件でした（searchWord="${ind.searchWord}"）。`);
+    console.log(`e-Statからの応答: ${e.message}`);
+    console.log('→ searchWord を単純な単語1つに減らして再実行してみてください。');
+    return;
+  }
   const list = json.GET_STATS_LIST;
   if (!list || !list.DATALIST_INF) {
     console.log('(該当なし)');
