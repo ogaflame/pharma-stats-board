@@ -49,18 +49,21 @@ const INDICATORS = [
     id: 'yakuzaishi',
     label: '届出薬剤師数',
     statsCode: '00450026',
-    searchWord: '薬剤師数',
-    titleMustInclude: ['薬剤師数', '業務の種別'],
-    titleMustExclude: ['薬局', '医療施設従事'],
+    searchWord: '薬剤師数 平均年齢 業務の種別',
+    titleMustInclude: ['薬剤師数', '平均年齢', '業務の種別'],
+    titleMustExclude: ['薬局', '医療施設従事', '都道府県', '構成割合'],
     mode: 'total',
+    tabMatch: '総数', // 主たる業務の種別のうち「総数」＝届出薬剤師数全体
   },
   {
     id: 'yakkyoku_juji',
     label: '薬局従事薬剤師数',
     statsCode: '00450026',
-    searchWord: '薬局 薬剤師数',
-    titleMustInclude: ['薬局', '医療施設従事薬剤師数', '年次推移'],
+    searchWord: '薬剤師数 平均年齢 業務の種別',
+    titleMustInclude: ['薬剤師数', '平均年齢', '業務の種別'],
+    titleMustExclude: ['都道府県', '構成割合'],
     mode: 'total',
+    tabMatch: '薬局', // 主たる業務の種別のうち「薬局」＝薬局従事薬剤師数
   },
   {
     id: 'jinko',
@@ -77,19 +80,24 @@ const INDICATORS = [
     id: 'shussho',
     label: '出生数',
     statsCode: '00450011',
-    searchWord: '出生数',
-    titleMustInclude: ['出生数'],
-    titleMustExclude: ['都道府県', '週数'],
+    // 「出生数」の検索は候補が300件超あり絞り込みが困難なため、
+    // 事前に確認済みの表番号を直接指定する（人口動態統計 確定数 出生／
+    // 「上巻 年次別にみた出生数・出生率（人口千対）・出生性比及び合計特殊出生率」）
+    // ※この表がもし新しい統計表IDに切り替わった場合は、
+    //   --list shussho で候補を確認し、この値を更新してください
+    hardcodedStatsDataId: '0003411595',
     mode: 'total',
+    tabMatch: '出生数', // 同じ表に出生率・合計特殊出生率等が同居しているための絞り込み
   },
   {
     id: 'tfr',
     label: '合計特殊出生率',
     statsCode: '00450011',
-    searchWord: '合計特殊出生率',
-    titleMustInclude: ['合計特殊出生率'],
-    titleMustExclude: ['都道府県'],
+    // 出生数と同じ表（人口動態統計 確定数 出生）に同居しているため、
+    // 同じ表番号を直接指定する
+    hardcodedStatsDataId: '0003411595',
     mode: 'total',
+    tabMatch: '合計特殊出生率', // 同じ表に出生数・出生率等が同居しているための絞り込み
   },
   {
     id: 'shakai_hoshou',
@@ -153,16 +161,14 @@ function parseNum(s) {
 // 統計表の検索・絞り込み（公開日が最新のものを採用）
 // ============================================================
 async function findBestTable(ind) {
+  const params = { appId: APP_ID, statsCode: ind.statsCode, limit: 1000 };
+  if (ind.searchWord) params.searchWord = ind.searchWord;
+
   let json;
   try {
-    json = await estatGet('getStatsList', {
-      appId: APP_ID,
-      statsCode: ind.statsCode,
-      searchWord: ind.searchWord,
-      limit: 1000,
-    });
+    json = await estatGet('getStatsList', params);
   } catch (e) {
-    console.warn(`  ⚠ 検索結果が0件（searchWord="${ind.searchWord}"）: ${e.message}`);
+    console.warn(`  ⚠ 検索結果が0件（searchWord="${ind.searchWord || '(なし)'}"）: ${e.message}`);
     return null;
   }
   const list = json.GET_STATS_LIST;
@@ -209,8 +215,14 @@ async function extractSeries(statsDataId, ind) {
       return;
     }
     let pick;
-    if (id === 'area') pick = items.find((i) => i['@name'] === '全国');
-    else pick = items.find((i) => i['@name'] === '総数');
+    if (id === 'area') {
+      pick = items.find((i) => i['@name'] === '全国');
+    } else if (ind.tabMatch) {
+      // 1つの表に複数の指標（出生数・出生率・合計特殊出生率など）が
+      // 表章項目として同居している場合、キーワードで該当項目を選ぶ
+      pick = items.find((i) => plain(i['@name']).includes(ind.tabMatch));
+    }
+    if (!pick) pick = items.find((i) => i['@name'] === '総数');
     if (!pick) [pick] = items;
     wanted[`@${id}`] = pick['@code'];
   });
@@ -317,17 +329,18 @@ async function listCandidates(indicatorId) {
     console.error(`使える指標ID: ${INDICATORS.map((i) => i.id).join(', ')}`);
     process.exit(1);
   }
-  console.log(`=== ${ind.label}（searchWord="${ind.searchWord}"）の候補表 ===\n`);
+  console.log(`=== ${ind.label}（searchWord="${ind.searchWord || '(なし・statsCodeのみ)'}"）の候補表 ===\n`);
+
+  const params = { appId: APP_ID, statsCode: ind.statsCode, limit: 1000 };
+  if (ind.searchWord) params.searchWord = ind.searchWord;
 
   let json;
   try {
-    json = await estatGet('getStatsList', {
-      appId: APP_ID, statsCode: ind.statsCode, searchWord: ind.searchWord, limit: 1000,
-    });
+    json = await estatGet('getStatsList', params);
   } catch (e) {
-    console.log(`検索結果が0件でした（searchWord="${ind.searchWord}"）。`);
+    console.log(`検索結果が0件でした（searchWord="${ind.searchWord || '(なし)'}"）。`);
     console.log(`e-Statからの応答: ${e.message}`);
-    console.log('→ searchWord を単純な単語1つに減らして再実行してみてください。');
+    console.log('→ searchWord を外して statsCode のみで再実行してみてください。');
     return;
   }
   const list = json.GET_STATS_LIST;
@@ -376,13 +389,21 @@ async function main() {
   for (const ind of INDICATORS) {
     console.log(`\n=== ${ind.label} ===`);
     try {
-      const table = await findBestTable(ind);
-      if (!table) {
-        console.warn('  → 該当表が見つかりませんでした。スキップします。');
-        summary.push({ id: ind.id, status: 'not_found' });
-        continue;
+      let table;
+      if (ind.hardcodedStatsDataId) {
+        // 検索に頼らず、事前に確認済みの表番号を直接使う
+        // （候補が多すぎて検索での絞り込みが難しい統計向け）
+        table = { id: ind.hardcodedStatsDataId, title: '(表番号を直接指定)', openDate: new Date().toISOString().slice(0, 10) };
+        console.log(`  → 表番号を直接指定: statsDataId=${table.id}`);
+      } else {
+        table = await findBestTable(ind);
+        if (!table) {
+          console.warn('  → 該当表が見つかりませんでした。スキップします。');
+          summary.push({ id: ind.id, status: 'not_found' });
+          continue;
+        }
+        console.log(`  → 採用: ${table.title}（statsDataId=${table.id}, 公開日=${table.openDate}）`);
       }
-      console.log(`  → 採用: ${table.title}（statsDataId=${table.id}, 公開日=${table.openDate}）`);
 
       const rawSeries = await extractSeries(table.id, ind);
       if (!rawSeries.length) {
