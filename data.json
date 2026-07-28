@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-07-28",
+  "generatedAt": "2026-07-27",
   "indicators": [
     {
       "id": "yakkyoku",
@@ -13,7 +13,7 @@
       "sourceUrl": "https://www.mhlw.go.jp/toukei/list/36-19a.html",
       "statsCode": "00450027",
       "cycle": "年次",
-      "publishedAt": "2026-03-25",
+      "publishedAt": "2025-10-21",
       "publishMonth": 10,
       "nextPublish": "2026年10月下旬",
       "note": "e-Stat 年度報／薬事／表1-1「薬局数，都道府県別」の全国・総数。",
@@ -89,103 +89,9 @@
       ]
     },
     {
-      "id": "yakuzaishi",
-      "name": "届出薬剤師数",
-      "group": "薬局",
-      "category": "医療従事者",
-      "unit": "人",
-      "periodKind": "年",
-      "asOf": "各年12月31日現在",
-      "source": "医師・歯科医師・薬剤師統計（厚生労働省）",
-      "sourceUrl": "https://www.mhlw.go.jp/toukei/list/33-20.html",
-      "statsCode": "00450026",
-      "cycle": "隔年",
-      "publishedAt": "2025-12-23",
-      "publishMonth": 12,
-      "nextPublish": "2027年12月頃",
-      "note": "薬剤師法第9条に基づく届出数。2年に1度の調査。",
-      "series": [
-        [
-          2010,
-          276517
-        ],
-        [
-          2012,
-          280052
-        ],
-        [
-          2014,
-          288151
-        ],
-        [
-          2016,
-          301323
-        ],
-        [
-          2018,
-          311289
-        ],
-        [
-          2020,
-          321982
-        ],
-        [
-          2022,
-          323690
-        ],
-        [
-          2024,
-          329045
-        ]
-      ]
-    },
-    {
-      "id": "yakkyoku_juji",
-      "name": "薬局従事薬剤師数",
-      "group": "薬局",
-      "category": "医療従事者",
-      "unit": "人",
-      "periodKind": "年",
-      "asOf": "各年12月31日現在",
-      "source": "医師・歯科医師・薬剤師統計（厚生労働省）",
-      "sourceUrl": "https://www.mhlw.go.jp/toukei/list/33-20.html",
-      "statsCode": "00450026",
-      "cycle": "隔年",
-      "publishedAt": "2025-12-23",
-      "publishMonth": 12,
-      "nextPublish": "2027年12月頃",
-      "note": "「施設・業務の種別」のうち薬局の従事者。1薬局あたりの薬剤師数を見るときの分子。",
-      "series": [
-        [
-          2014,
-          160752
-        ],
-        [
-          2016,
-          172142
-        ],
-        [
-          2018,
-          180415
-        ],
-        [
-          2020,
-          188982
-        ],
-        [
-          2022,
-          190735
-        ],
-        [
-          2024,
-          197437
-        ]
-      ]
-    },
-    {
       "id": "chiiki_renkei_yakkyoku",
       "name": "地域連携薬局",
-      "group": "薬局認定",
+      "group": "認定薬局",
       "category": "薬局区分",
       "unit": "薬局",
       "periodKind": "年",
@@ -207,7 +113,7 @@
     {
       "id": "senmon_renkei_yakkyoku",
       "name": "専門医療機関連携薬局",
-      "group": "薬局認定",
+      "group": "認定薬局",
       "category": "薬局区分",
       "unit": "薬局",
       "periodKind": "年",
@@ -229,7 +135,7 @@
     {
       "id": "kenko_support_yakkyoku",
       "name": "健康サポート薬局",
-      "group": "薬局認定",
+      "group": "認定薬局",
       "category": "薬局区分",
       "unit": "薬局",
       "periodKind": "年",
@@ -260,7 +166,7 @@
       "sourceUrl": "https://www.stat.go.jp/data/jinsui/",
       "statsCode": "00200524",
       "cycle": "月次（確定値は5か月後）",
-      "publishedAt": "2026-07-21",
+      "publishedAt": "2026-03-19",
       "publishMonth": 4,
       "nextPublish": "毎月20日前後",
       "note": "各年10月1日現在の総人口。月報では毎月の概算値も公表される。",
@@ -457,26 +363,6 @@
       "note": "医療・年金・福祉その他の合計。国の予算（当初ベース）ではなく、実際に給付された決算ベースの総額。",
       "series": [
         [
-          2014,
-          112.2
-        ],
-        [
-          2015,
-          116.8
-        ],
-        [
-          2016,
-          118.3
-        ],
-        [
-          2017,
-          120.1
-        ],
-        [
-          2018,
-          121.4
-        ],
-        [
           2019,
           123.9
         ],
@@ -571,8 +457,8 @@
           ],
           "2023": [
             {
-              "label": "合計",
-              "value": 1354928,
+              "label": "年金",
+              "value": 563936,
               "color": "#1d5e86"
             },
             {
@@ -581,19 +467,9 @@
               "color": "#6fa3c2"
             },
             {
-              "label": "年金",
-              "value": 563936,
-              "color": "#3b7a57"
-            },
-            {
               "label": "福祉その他",
               "value": 335192,
-              "color": "#8fbf9c"
-            },
-            {
-              "label": "福祉その他_介護対策（再掲）",
-              "value": 115915,
-              "color": "#a6472c"
+              "color": "#3b7a57"
             }
           ]
         }
@@ -612,11 +488,19 @@
       "sourceUrl": "https://www.mhlw.go.jp/toukei/list/37-21.html",
       "statsCode": "00450032",
       "cycle": "年次（例年秋ごろ公表、当該年度の約2年後）",
-      "publishedAt": "2026-02-20",
+      "publishedAt": "2025-10-10",
       "publishMonth": 10,
       "nextPublish": "2026年10月頃（令和6年度分）",
       "note": "医療保険・公費負担・患者負担等を合算した確定値。労災保険等も含み、速報値の「医療費の動向（概算医療費）」より対象が広い。",
       "series": [
+        [
+          2012,
+          39.2
+        ],
+        [
+          2013,
+          40.1
+        ],
         [
           2014,
           40.8
@@ -1053,49 +937,29 @@
           ],
           "2023": [
             {
-              "label": "総数",
-              "value": 480915,
-              "color": "#1d5e86"
-            },
-            {
-              "label": "公費_総数",
-              "value": 180331,
-              "color": "#6fa3c2"
-            },
-            {
-              "label": "公費_国庫",
+              "label": "国庫",
               "value": 119252,
-              "color": "#3b7a57"
-            },
-            {
-              "label": "公費_地方",
-              "value": 61079,
-              "color": "#8fbf9c"
-            },
-            {
-              "label": "保険料_総数",
-              "value": 241383,
-              "color": "#a6472c"
-            },
-            {
-              "label": "保険料_事業主",
-              "value": 105613,
               "color": "#1d5e86"
             },
             {
-              "label": "保険料_被保険者",
-              "value": 135770,
+              "label": "地方",
+              "value": 61079,
               "color": "#6fa3c2"
             },
             {
-              "label": "その他_総数",
-              "value": 59201,
+              "label": "事業主",
+              "value": 105613,
               "color": "#3b7a57"
             },
             {
-              "label": "その他_患者負担（再掲）",
-              "value": 56865,
+              "label": "被保険者",
+              "value": 135770,
               "color": "#8fbf9c"
+            },
+            {
+              "label": "その他（患者負担等）",
+              "value": 59201,
+              "color": "#a6472c"
             }
           ]
         }
