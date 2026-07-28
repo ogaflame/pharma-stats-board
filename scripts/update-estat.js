@@ -70,6 +70,8 @@ const INDICATORS = [
     titleMustInclude: ['総人口'],
     mode: 'total',
     unitDivide: 1000, // 人 → 千人
+    preferMonth: '10月', // 各年10月1日現在の値を優先（未公表月の空欄行を拾わないため）
+    dropZero: true,
   },
   {
     id: 'shussho',
@@ -98,6 +100,7 @@ const INDICATORS = [
     mode: 'total_and_breakdown',
     breakdownAxisNames: ['部門', '費用項目'],
     totalScale: 'oku_to_cho', // 億円 → 兆円（小数1桁）
+    truncateYears: 10, // 直近10年分のみ保持
   },
   {
     id: 'iryohi',
@@ -108,6 +111,7 @@ const INDICATORS = [
     mode: 'total_and_breakdown',
     breakdownAxisNames: ['財源'],
     totalScale: 'oku_to_cho',
+    truncateYears: 10, // 直近10年分のみ保持
   },
 ];
 
@@ -180,8 +184,10 @@ async function findBestTable(ind) {
 
 // ============================================================
 // 年次推移（時間軸×全国×総数）の抽出
+// ind を渡すと、月次表の月指定（preferMonth）やゼロ値除外（dropZero）を適用する
 // ============================================================
-async function extractSeries(statsDataId) {
+async function extractSeries(statsDataId, ind) {
+  ind = ind || {};
   const json = await estatGet('getStatsData', { appId: APP_ID, statsDataId, limit: 100000 });
   const sd = json.GET_STATS_DATA.STATISTICAL_DATA;
   const classObjs = toArray(sd.CLASS_INF.CLASS_OBJ);
@@ -204,17 +210,35 @@ async function extractSeries(statsDataId) {
   });
 
   const keys = Object.keys(wanted);
-  const out = [];
+  // 年ごとに1点だけ残す（月次表対策）。preferMonth があればその月を優先、
+  // 無ければその年で最後に見つかった有効値を採用する
+  const byYear = new Map();
   values.forEach((v) => {
     const hit = keys.every((k) => v[k] === wanted[k]);
     if (!hit) return;
     const label = timeName[v['@time']] || '';
     const m = label.match(/(\d{4})/);
     if (!m) return;
+    const year = Number(m[1]);
     const num = parseNum(v['$']);
     if (num === null) return;
-    out.push([Number(m[1]), num]);
+    if (ind.dropZero && num === 0) return;
+
+    const isPreferredMonth = Boolean(ind.preferMonth && label.includes(ind.preferMonth));
+    const existing = byYear.get(year);
+    if (!existing) {
+      byYear.set(year, { value: num, isPreferredMonth });
+    } else if (isPreferredMonth && !existing.isPreferredMonth) {
+      // 優先月のデータが見つかったら、そちらに差し替える
+      byYear.set(year, { value: num, isPreferredMonth });
+    } else if (!existing.isPreferredMonth && !isPreferredMonth) {
+      // どちらも優先月ではない場合は、後に見つかった方（＝新しい改定値）を採用
+      byYear.set(year, { value: num, isPreferredMonth });
+    }
+    // 既存が優先月・今回が優先月でない場合は既存を維持
   });
+
+  const out = Array.from(byYear.entries()).map(([year, o]) => [year, o.value]);
   out.sort((a, b) => a[0] - b[0]);
   return out;
 }
@@ -277,9 +301,56 @@ async function extractBreakdown(statsDataId, ind) {
 }
 
 // ============================================================
+// 診断モード： node scripts/update-estat.js --list <指標id>
+// titleMustInclude/Exclude の絞り込み前の「候補表」を一覧表示する
+// ============================================================
+async function listCandidates(indicatorId) {
+  const ind = INDICATORS.find((i) => i.id === indicatorId);
+  if (!ind) {
+    console.error(`指標IDが見つかりません: ${indicatorId}`);
+    console.error(`使える指標ID: ${INDICATORS.map((i) => i.id).join(', ')}`);
+    process.exit(1);
+  }
+  console.log(`=== ${ind.label}（searchWord="${ind.searchWord}"）の候補表 ===\n`);
+
+  const json = await estatGet('getStatsList', {
+    appId: APP_ID, statsCode: ind.statsCode, searchWord: ind.searchWord, limit: 1000,
+  });
+  const list = json.GET_STATS_LIST;
+  if (!list || !list.DATALIST_INF) {
+    console.log('(該当なし)');
+    return;
+  }
+  const tables = toArray(list.DATALIST_INF.TABLE_INF).map((t) => ({
+    id: t['@id'],
+    statName: plain(t.STATISTICS_NAME),
+    title: plain(t.TITLE),
+    openDate: String(t.OPEN_DATE || '').slice(0, 10),
+  }));
+  tables.sort((a, b) => (a.openDate < b.openDate ? 1 : -1));
+
+  tables.slice(0, 40).forEach((t) => {
+    const passInclude = (ind.titleMustInclude || []).every((k) => t.title.includes(k));
+    const passExclude = !(ind.titleMustExclude || []).some((k) => t.title.includes(k));
+    const currentFilterResult = passInclude && passExclude ? '✓現在の条件に合致' : '  (条件に非該当)';
+    console.log(`[${t.id}] ${t.openDate} ${currentFilterResult}`);
+    console.log(`  統計名: ${t.statName}`);
+    console.log(`  表題　: ${t.title}\n`);
+  });
+  console.log(`(全${tables.length}件中、上位40件を表示)`);
+}
+
+// ============================================================
 // メイン処理
 // ============================================================
 async function main() {
+  const listIdx = process.argv.indexOf('--list');
+  if (listIdx !== -1) {
+    const indicatorId = process.argv[listIdx + 1];
+    await listCandidates(indicatorId);
+    return;
+  }
+
   if (!fs.existsSync(DATA_JSON_PATH)) {
     console.error(`data.json が見つかりません: ${DATA_JSON_PATH}`);
     process.exit(1);
@@ -299,7 +370,7 @@ async function main() {
       }
       console.log(`  → 採用: ${table.title}（statsDataId=${table.id}, 公開日=${table.openDate}）`);
 
-      const rawSeries = await extractSeries(table.id);
+      const rawSeries = await extractSeries(table.id, ind);
       if (!rawSeries.length) {
         console.warn('  → データが空でした。スキップします。');
         summary.push({ id: ind.id, status: 'empty' });
@@ -322,10 +393,24 @@ async function main() {
       }
 
       const prevLast = target.series[target.series.length - 1];
+      const prevCount = target.series.length;
+
+      // 「取得できた分だけ既存の推移に追加（同じ年は上書き）」を全指標共通の既定動作にする。
+      // e-Statから取得できる範囲が表によって違っても（単年スナップショットでも全期間でも）、
+      // 既存の履歴が消えることがないようにするため。
+      const merged = new Map(target.series.map(([y, v]) => [y, v]));
+      series.forEach(([y, v]) => { merged.set(y, v); });
+      series = Array.from(merged.entries()).sort((a, b) => a[0] - b[0]);
+
+      if (ind.truncateYears) {
+        series = series.slice(-ind.truncateYears);
+      }
+
       target.series = series;
       target.publishedAt = table.openDate;
       const newLast = series[series.length - 1];
-      console.log(`  → 更新: ${prevLast ? prevLast.join('=') : '(なし)'} → ${newLast.join('=')}`);
+      const added = series.length - prevCount;
+      console.log(`  → 更新: ${prevLast ? prevLast.join('=') : '(なし)'} → ${newLast.join('=')}　（保持年数: ${series.length}、新規追加: ${Math.max(added, 0)}件）`);
 
       let breakdownInfo = null;
       if (ind.mode === 'total_and_breakdown') {
