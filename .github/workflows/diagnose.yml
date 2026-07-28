@@ -1,0 +1,37 @@
+name: Diagnose e-Stat tables
+
+# 手動実行専用（Actionsタブの「Run workflow」ボタンから起動）
+on:
+  workflow_dispatch:
+
+jobs:
+  diagnose:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: List candidates - yakuzaishi (届出薬剤師数)
+        env:
+          ESTAT_APP_ID: ${{ secrets.ESTAT_APP_ID }}
+        run: node scripts/update-estat.js --list yakuzaishi
+
+      - name: List candidates - yakkyoku_juji (薬局従事薬剤師数)
+        env:
+          ESTAT_APP_ID: ${{ secrets.ESTAT_APP_ID }}
+        run: node scripts/update-estat.js --list yakkyoku_juji
+
+      - name: List candidates - shussho (出生数)
+        env:
+          ESTAT_APP_ID: ${{ secrets.ESTAT_APP_ID }}
+        run: node scripts/update-estat.js --list shussho
+
+      - name: List candidates - tfr (合計特殊出生率)
+        env:
+          ESTAT_APP_ID: ${{ secrets.ESTAT_APP_ID }}
+        run: node scripts/update-estat.js --list tfr
