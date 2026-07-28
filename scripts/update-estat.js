@@ -399,7 +399,15 @@ async function main() {
       // e-Statから取得できる範囲が表によって違っても（単年スナップショットでも全期間でも）、
       // 既存の履歴が消えることがないようにするため。
       const merged = new Map(target.series.map(([y, v]) => [y, v]));
-      series.forEach(([y, v]) => { merged.set(y, v); });
+      series.forEach(([y, v]) => {
+        if (v === 0 || v === null) return; // 0値・null値はどの指標でもあり得ないため取り込まない
+        merged.set(y, v);
+      });
+      // 既存データの中に紛れ込んだ0値（未公表期間の空欄取得等による過去の不具合）も、
+      // ここで一緒に取り除く（自己修復）
+      Array.from(merged.entries()).forEach(([y, v]) => {
+        if (v === 0 || v === null) merged.delete(y);
+      });
       series = Array.from(merged.entries()).sort((a, b) => a[0] - b[0]);
 
       if (ind.truncateYears) {
