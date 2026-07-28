@@ -46,24 +46,6 @@ const INDICATORS = [
     mode: 'total',
   },
   {
-    id: 'yakuzaishi',
-    label: '届出薬剤師数',
-    statsCode: '00450026',
-    titleMustInclude: ['薬剤師数', '平均年齢', '業務の種別'],
-    titleMustExclude: ['薬局', '医療施設従事', '都道府県', '構成割合'],
-    mode: 'total',
-    tabMatch: '総数', // 主たる業務の種別のうち「総数」＝届出薬剤師数全体
-  },
-  {
-    id: 'yakkyoku_juji',
-    label: '薬局従事薬剤師数',
-    statsCode: '00450026',
-    titleMustInclude: ['薬剤師数', '平均年齢', '業務の種別'],
-    titleMustExclude: ['都道府県', '構成割合'],
-    mode: 'total',
-    tabMatch: '薬局', // 主たる業務の種別のうち「薬局」＝薬局従事薬剤師数
-  },
-  {
     id: 'jinko',
     label: '総人口',
     statsCode: '00200524',
