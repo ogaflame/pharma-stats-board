@@ -11,8 +11,12 @@
  *  ダッシュボード側はこのファイルを読み、新しい版があれば
  *  参照データベースのカードにバッジを表示します。
  *
+ *  どちらの統計も e-Stat 上「ファイル」のみの登録（データベース登録が
+ *  無い）ため、e-Stat APIではなく該当ページを直接スクレイピングして
+ *  確認しています。そのためアプリケーションIDは不要です。
+ *
  *  実行方法（ローカルで試す場合）：
- *    ESTAT_APP_ID=xxxxxxxx node scripts/check-updates.js
+ *    node scripts/check-updates.js
  *
  *  Node 18以降が必要です（組み込みの fetch を使用）。
  * ============================================================
@@ -21,9 +25,7 @@
 const fs = require('fs');
 const path = require('path');
 
-const APP_ID = process.env.ESTAT_APP_ID;
 const STATUS_PATH = process.env.STATUS_PATH || path.join(__dirname, '..', 'updates-status.json');
-const API_BASE = 'https://api.e-stat.go.jp/rest/3.0/app/json/';
 
 /**
  * 今のダッシュボードが「最新」として認識している版。
@@ -35,61 +37,49 @@ const KNOWN_LATEST = {
   iryou_keizai_yakkyoku: { round: 25 },         // 医療経済実態調査（現在ダッシュボードにあるのは第25回）
 };
 
-async function estatGet(endpoint, params) {
-  const qs = Object.entries(params).map(([k, v]) => `${k}=${encodeURIComponent(v)}`).join('&');
-  const res = await fetch(`${API_BASE}${endpoint}?${qs}`);
-  if (!res.ok) throw new Error(`HTTP ${res.status}`);
-  const json = await res.json();
-  const result = (json.GET_STATS_LIST || {}).RESULT;
-  if (result && Number(result.STATUS) !== 0) {
-    throw new Error(`e-Stat エラー ${result.STATUS}: ${result.ERROR_MSG}`);
-  }
-  return json;
-}
-function toArray(x) { if (x === null || x === undefined) return []; return Array.isArray(x) ? x : [x]; }
-function plain(x) { if (x === null || x === undefined) return ''; if (typeof x === 'object') return String(x['$'] || ''); return String(x); }
-
 /* ============================================================
-   社会医療診療行為別統計：statsCode 00450048 の中で、
-   表題に含まれる西暦年の最大値を「最新年」とみなす
+   社会医療診療行為別統計：statsCode 00450048 は e-Stat 上「ファイル」
+   のみの登録（データベース登録が無い）ため、getStatsList/getStatsData
+   では中身を取得できない。そのため、ファイル検索ページの
+   「調査年で絞込み」の一覧をスクレイピングして最新年を確認する。
    ============================================================ */
+function toHalfWidthDigits(s) {
+  return s.replace(/[０-９]/g, (c) => String.fromCharCode(c.charCodeAt(0) - 0xFEE0));
+}
+
 async function checkChouzaiKanteiritsu() {
-  const params = { appId: APP_ID, statsCode: '00450048', limit: 1000 };
-  let json;
+  const url = 'https://www.e-stat.go.jp/stat-search/files?toukei=00450048';
+  let text;
   try {
-    json = await estatGet('getStatsList', params);
+    const res = await fetch(url);
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    text = toHalfWidthDigits(await res.text());
   } catch (e) {
     return { ok: false, error: e.message };
   }
-  const list = json.GET_STATS_LIST;
-  if (!list || !list.DATALIST_INF) return { ok: false, error: '候補表が見つかりませんでした' };
 
-  const tables = toArray(list.DATALIST_INF.TABLE_INF);
-  let maxYear = 0;
-  let sample = null;
-  tables.forEach((t) => {
-    const title = plain(t.TITLE);
-    const statName = plain(t.STATISTICS_NAME);
-    const m = (statName + title).match(/(20\d{2})年/);
-    if (m) {
-      const y = Number(m[1]);
-      if (y > maxYear) { maxYear = y; sample = { title, statName, openDate: String(t.OPEN_DATE || '').slice(0, 10) }; }
-    }
-  });
+  // 「調査年で絞込み」〜次のセクション見出しの間だけを対象にする
+  const startIdx = text.indexOf('調査年で絞込み');
+  if (startIdx === -1) return { ok: false, error: '「調査年で絞込み」の項目が見つかりませんでした（ページ構成が変わった可能性があります）' };
+  const endIdx = text.indexOf('調査月で絞込み', startIdx);
+  const section = text.slice(startIdx, endIdx === -1 ? startIdx + 4000 : endIdx);
 
-  if (!maxYear) return { ok: false, error: '年度を特定できませんでした（表題の書式が変わった可能性があります）' };
+  const years = [...section.matchAll(/(20\d{2})年/g)].map((m) => Number(m[1]));
+  if (!years.length) return { ok: false, error: '年度の一覧を読み取れませんでした' };
 
+  const maxYear = Math.max(...years);
   return {
     ok: true,
     foundLatestYear: maxYear,
     knownLatestYear: KNOWN_LATEST.chouzai_kanteiritsu.year,
     hasUpdate: maxYear > KNOWN_LATEST.chouzai_kanteiritsu.year,
-    sample,
+    sourceUrl: url,
   };
 }
 
 /* ============================================================
    医療経済実態調査：MHLWのページ本文から「第◯◯回」の最大値を確認
+   （全角数字で書かれている場合があるため、半角に正規化してから判定）
    ============================================================ */
 async function checkIryouKeizai() {
   const url = 'https://www.mhlw.go.jp/bunya/iryouhoken/database/zenpan/iryoukikan.html';
@@ -97,12 +87,12 @@ async function checkIryouKeizai() {
   try {
     const res = await fetch(url);
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    text = await res.text();
+    text = toHalfWidthDigits(await res.text());
   } catch (e) {
     return { ok: false, error: e.message };
   }
 
-  const matches = [...text.matchAll(/第(\d+)回医療経済実態調査/g)];
+  const matches = [...text.matchAll(/第(\d+)\s*回医療経済実態調査/g)];
   if (!matches.length) return { ok: false, error: '「第◯◯回」の記載が見つかりませんでした（ページ構成が変わった可能性があります）' };
 
   const rounds = matches.map((m) => Number(m[1]));
@@ -118,11 +108,6 @@ async function checkIryouKeizai() {
 }
 
 async function main() {
-  if (!APP_ID) {
-    console.error('環境変数 ESTAT_APP_ID が設定されていません（社会医療診療行為別統計の確認に必要です）。');
-    process.exit(1);
-  }
-
   console.log('=== 社会医療診療行為別統計 ===');
   const chouzai = await checkChouzaiKanteiritsu();
   console.log(JSON.stringify(chouzai, null, 2));
