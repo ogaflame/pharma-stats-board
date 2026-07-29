@@ -247,6 +247,8 @@ table.series tr:first-child td{background:#fff}
 .db-fig .v{font-family:var(--fig);font-weight:600;font-size:26px;line-height:1.1;font-variant-numeric:tabular-nums}
 .db-fig .v small{font-size:12px;font-family:var(--body);color:var(--ink2);margin-left:3px}
 .db-purpose{max-width:280px;border-left:2px solid var(--rule2);padding-left:16px}
+.update-badge{display:inline-block;font-family:var(--fig);font-size:9.5px;letter-spacing:.06em;
+  color:#fff;background:var(--bengara);padding:2px 8px;border-radius:2px;margin:0 0 8px}
 .db-purpose .k{font-size:10.5px;color:var(--ink3);letter-spacing:.06em;margin-bottom:5px}
 .db-purpose p{margin:0;font-size:11.5px;line-height:1.75;color:var(--ink2)}
 @media(max-width:700px){.db-card{grid-template-columns:1fr}.db-figs{gap:20px}.db-purpose{max-width:none;border-left:none;border-top:2px solid var(--rule2);padding-left:0;padding-top:12px}}
@@ -1226,11 +1228,21 @@ function populationCardHTML(db){
 function matrixYears(db){ return Object.keys(db.years).sort(); }
 function matrixLatestYear(db){ const ys = matrixYears(db); return ys[ys.length - 1]; }
 
+/* ---------- 更新有無バッジ（updates-status.json を参照） ---------- */
+function updateBadgeHTML(key){
+  if(!UPDATE_STATUS) return '';
+  const s = UPDATE_STATUS[key];
+  if(!s || !s.ok || !s.hasUpdate) return '';
+  const label = s.foundLatestYear ? `${s.foundLatestYear}年` : (s.foundLatestRound ? `第${s.foundLatestRound}回` : '新しい版');
+  return `<span class="update-badge" title="確認日時：${UPDATE_STATUS.checkedAt || ''}">新着　${label}が公開されています</span>`;
+}
+
 function matrixCardHTML(db){
   const years = matrixYears(db);
   return `<button class="db-card" data-id="${db.id}">
     <div>
       <span class="tag">${years.join('・')}年</span><span class="tag">${db.category}</span>
+      ${updateBadgeHTML('chouzai_kanteiritsu')}
       <h2>${db.name}</h2>
       <div class="desc">調剤基本料（合計・区分別）ごとに、加算算定率をマトリクスで確認できます。${years.length>1?'年タブで切り替え、「合計」列は経年比較も可能。':''}</div>
     </div>
@@ -1253,6 +1265,7 @@ function iryoukeizaiCardHTML(db){
   return `<button class="db-card" data-id="${db.id}">
     <div>
       <span class="tag">${db.edition}</span><span class="tag">${db.category}</span>
+      ${updateBadgeHTML('iryou_keizai_yakkyoku')}
       <h2>${db.name}</h2>
       <div class="desc">個人・法人・全体の1施設あたり収益と給与費。ページ内で損益状況を財務諸表スタイルで確認できます。</div>
     </div>
@@ -2464,6 +2477,8 @@ function initTheme(){
   });
 }
 
+let UPDATE_STATUS = null;
+
 /* ---------- 起動 ---------- */
 function boot(){
   $('#stamp').textContent = 'データ生成 ' + (DATA.generatedAt || '—');
@@ -2474,11 +2489,16 @@ function boot(){
   route();
 }
 
-fetch('./data.json', {cache: 'no-store'})
-  .then(r => r.ok ? r.json() : Promise.reject())
-  .then(j => { DATA = j; })
-  .catch(() => { /* 初期値のまま */ })
-  .finally(boot);
+Promise.all([
+  fetch('./data.json', {cache: 'no-store'})
+    .then(r => r.ok ? r.json() : Promise.reject())
+    .then(j => { DATA = j; })
+    .catch(() => { /* 初期値のまま */ }),
+  fetch('./updates-status.json', {cache: 'no-store'})
+    .then(r => r.ok ? r.json() : Promise.reject())
+    .then(j => { UPDATE_STATUS = j; })
+    .catch(() => { /* まだ生成されていない場合は何もしない */ }),
+]).finally(boot);
 </script>
 </body>
 </html>
