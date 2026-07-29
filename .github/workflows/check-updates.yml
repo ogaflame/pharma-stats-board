@@ -21,8 +21,6 @@ jobs:
           node-version: '20'
 
       - name: Run update-check script
-        env:
-          ESTAT_APP_ID: ${{ secrets.ESTAT_APP_ID }}
         run: node scripts/check-updates.js
 
       - name: Commit and push if changed
