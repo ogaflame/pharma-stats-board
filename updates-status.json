@@ -1,8 +1,11 @@
 {
-  "checkedAt": "2026-07-29T13:55:06.989Z",
+  "checkedAt": "2026-07-29T14:04:41.950Z",
   "chouzai_kanteiritsu": {
-    "ok": false,
-    "error": "e-Stat エラー 1: 正常に終了しましたが、該当データはありませんでした。"
+    "ok": true,
+    "foundLatestYear": 2025,
+    "knownLatestYear": 2025,
+    "hasUpdate": false,
+    "sourceUrl": "https://www.e-stat.go.jp/stat-search/files?toukei=00450048"
   },
   "iryou_keizai_yakkyoku": {
     "ok": false,
