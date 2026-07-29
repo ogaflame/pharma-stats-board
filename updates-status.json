@@ -1,0 +1,11 @@
+{
+  "checkedAt": "2026-07-29T13:55:06.989Z",
+  "chouzai_kanteiritsu": {
+    "ok": false,
+    "error": "e-Stat エラー 1: 正常に終了しましたが、該当データはありませんでした。"
+  },
+  "iryou_keizai_yakkyoku": {
+    "ok": false,
+    "error": "「第◯◯回」の記載が見つかりませんでした（ページ構成が変わった可能性があります）"
+  }
+}
