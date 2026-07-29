@@ -1,5 +1,5 @@
 {
-  "checkedAt": "2026-07-29T14:04:41.950Z",
+  "checkedAt": "2026-07-29T14:08:43.888Z",
   "chouzai_kanteiritsu": {
     "ok": true,
     "foundLatestYear": 2025,
@@ -8,7 +8,10 @@
     "sourceUrl": "https://www.e-stat.go.jp/stat-search/files?toukei=00450048"
   },
   "iryou_keizai_yakkyoku": {
-    "ok": false,
-    "error": "「第◯◯回」の記載が見つかりませんでした（ページ構成が変わった可能性があります）"
+    "ok": true,
+    "foundLatestRound": 25,
+    "knownLatestRound": 25,
+    "hasUpdate": false,
+    "sourceUrl": "https://www.mhlw.go.jp/bunya/iryouhoken/database/zenpan/iryoukikan.html"
   }
 }
