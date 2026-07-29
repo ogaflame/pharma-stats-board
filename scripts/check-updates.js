@@ -87,12 +87,18 @@ async function checkIryouKeizai() {
   try {
     const res = await fetch(url);
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    text = toHalfWidthDigits(await res.text());
+    // このページは今も Shift-JIS（CP932）で配信されているため、
+    // UTF-8前提の res.text() では日本語部分が文字化けする。
+    // バイト列を受け取り、明示的に Shift-JIS として読み直す。
+    const buffer = await res.arrayBuffer();
+    text = new TextDecoder('shift_jis').decode(buffer);
+    text = toHalfWidthDigits(text);
   } catch (e) {
     return { ok: false, error: e.message };
   }
 
-  const matches = [...text.matchAll(/第(\d+)\s*回医療経済実態調査/g)];
+  // 統計表一覧の「第◯◯回（令和◯年実施）」という並び（新しい回ほど上）から拾う
+  const matches = [...text.matchAll(/第(\d+)回（[^）]*実施）/g)];
   if (!matches.length) return { ok: false, error: '「第◯◯回」の記載が見つかりませんでした（ページ構成が変わった可能性があります）' };
 
   const rounds = matches.map((m) => Number(m[1]));
