@@ -1,5 +1,11 @@
 {
   "generatedAt": "2026-07-27",
+  "changeLog": [
+    {
+      "date": "2026-07-31",
+      "text": "社会保障給付費（令和6年度版）を手動で更新しました。"
+    }
+  ],
   "indicators": [
     {
       "id": "yakkyoku",
@@ -357,9 +363,9 @@
       "sourceUrl": "https://www.ipss.go.jp/site-ad/index_japanese/security.html",
       "statsCode": "00450437",
       "cycle": "年次（決算値のため、当該年度の2年後に公表）",
-      "publishedAt": "2025-07-29",
+      "publishedAt": "2026-07-29",
       "publishMonth": 7,
-      "nextPublish": "2026年7月頃（令和6年度分）",
+      "nextPublish": "2027年7月頃（令和7年度分）",
       "note": "医療・年金・福祉その他の合計。国の予算（当初ベース）ではなく、実際に給付された決算ベースの総額。",
       "series": [
         [
@@ -381,6 +387,10 @@
         [
           2023,
           135.5
+        ],
+        [
+          2024,
+          138.3
         ]
       ],
       "financing": {
@@ -469,6 +479,23 @@
             {
               "label": "福祉その他",
               "value": 335192,
+              "color": "#3b7a57"
+            }
+          ],
+          "2024": [
+            {
+              "label": "年金",
+              "value": 578528,
+              "color": "#1d5e86"
+            },
+            {
+              "label": "医療",
+              "value": 448055,
+              "color": "#6fa3c2"
+            },
+            {
+              "label": "福祉その他",
+              "value": 356436,
               "color": "#3b7a57"
             }
           ]
