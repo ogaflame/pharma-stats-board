@@ -174,9 +174,12 @@ header.site{padding:40px 0 0}
 /* ---------- detail ---------- */
 #detail{display:none;padding-bottom:80px}
 #detail.on{display:block}
-.back{background:none;border:none;cursor:pointer;font-family:var(--fig);font-size:12px;
-  letter-spacing:.1em;color:var(--ink2);padding:26px 0 18px}
-.back:hover{color:var(--ink);text-decoration:underline}
+.back{position:sticky;top:0;z-index:10;display:inline-flex;align-items:center;gap:6px;
+  background:var(--ink);color:var(--raised);border:none;cursor:pointer;
+  font-family:var(--fig);font-size:13px;letter-spacing:.06em;
+  padding:13px 20px;margin:20px 0 18px;border-radius:0 0 4px 0;
+  box-shadow:0 2px 6px rgba(0,0,0,.15)}
+.back:hover,.back:active{background:var(--ai)}
 .d-head{border-bottom:2px solid var(--ink);padding-bottom:16px}
 .d-head .cat{font-family:var(--fig);font-size:10px;letter-spacing:.16em;color:var(--ink3)}
 .d-head h2{font-family:var(--display);font-size:28px;letter-spacing:.1em;margin:4px 0 12px;font-weight:700}
