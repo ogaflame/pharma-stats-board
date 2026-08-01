@@ -68,6 +68,7 @@ const INDICATORS = [
     hardcodedStatsDataId: '0003411595',
     mode: 'total',
     tabMatch: '出生数', // 同じ表に出生率・合計特殊出生率等が同居しているための絞り込み
+    truncateYears: 10, // 直近10年分のみ保持（この表は年次別に何十年分も遡れるため）
   },
   {
     id: 'tfr',
@@ -78,6 +79,7 @@ const INDICATORS = [
     hardcodedStatsDataId: '0003411595',
     mode: 'total',
     tabMatch: '合計特殊出生率', // 同じ表に出生数・出生率等が同居しているための絞り込み
+    truncateYears: 10, // 直近10年分のみ保持
   },
   {
     id: 'shakai_hoshou',
@@ -285,14 +287,19 @@ async function extractBreakdown(statsDataId, ind) {
     fixed[`@${id}`] = pick['@code'];
   });
 
+  // 「総数」「合計」など、他の内訳項目を合算しただけの集計行は
+  // 兄弟項目として混入させない（円グラフの母数が狂う原因になるため）
+  const EXCLUDE_LABELS = ['総数', '合計', '計'];
   const out = [];
   breakdownItems.forEach((catItem) => {
+    const label = plain(catItem['@name']);
+    if (EXCLUDE_LABELS.includes(label.trim())) return;
     const target = { ...fixed, [`@${breakdownAxisId}`]: catItem['@code'], '@time': latestTimeCode };
     const hit = values.find((v) => Object.keys(target).every((k) => v[k] === target[k]));
     if (!hit) return;
     const num = parseNum(hit['$']);
     if (num === null) return;
-    out.push({ label: plain(catItem['@name']), value: num });
+    out.push({ label, value: num });
   });
 
   return { year: latestYear, items: out };
