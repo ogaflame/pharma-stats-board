@@ -490,33 +490,11 @@
               "color": "#3b7a57"
             }
           ],
-          "2024": [
-            {
-              "label": "合計",
-              "value": 1383019,
-              "color": "#1d5e86"
-            },
-            {
-              "label": "医療",
-              "value": 448055,
-              "color": "#6fa3c2"
-            },
-            {
-              "label": "年金",
-              "value": 578528,
-              "color": "#3b7a57"
-            },
-            {
-              "label": "福祉その他",
-              "value": 356436,
-              "color": "#8fbf9c"
-            },
-            {
-              "label": "福祉その他_介護対策（再掲）",
-              "value": 120063,
-              "color": "#a6472c"
-            }
-          ]
+"2024": [
+  { "label": "年金", "value": 578528, "color": "#1d5e86" },
+  { "label": "医療", "value": 448055, "color": "#6fa3c2" },
+  { "label": "福祉その他", "value": 356436, "color": "#3b7a57" }
+]
         }
       }
     },
@@ -973,52 +951,12 @@
             }
           ],
           "2023": [
-            {
-              "label": "総数",
-              "value": 480915,
-              "color": "#1d5e86"
-            },
-            {
-              "label": "公費_総数",
-              "value": 180331,
-              "color": "#6fa3c2"
-            },
-            {
-              "label": "公費_国庫",
-              "value": 119252,
-              "color": "#3b7a57"
-            },
-            {
-              "label": "公費_地方",
-              "value": 61079,
-              "color": "#8fbf9c"
-            },
-            {
-              "label": "保険料_総数",
-              "value": 241383,
-              "color": "#a6472c"
-            },
-            {
-              "label": "保険料_事業主",
-              "value": 105613,
-              "color": "#1d5e86"
-            },
-            {
-              "label": "保険料_被保険者",
-              "value": 135770,
-              "color": "#6fa3c2"
-            },
-            {
-              "label": "その他_総数",
-              "value": 59201,
-              "color": "#3b7a57"
-            },
-            {
-              "label": "その他_患者負担（再掲）",
-              "value": 56865,
-              "color": "#8fbf9c"
-            }
-          ]
+  { "label": "国庫", "value": 119252, "color": "#1d5e86" },
+  { "label": "地方", "value": 61079, "color": "#6fa3c2" },
+  { "label": "事業主", "value": 105613, "color": "#3b7a57" },
+  { "label": "被保険者", "value": 135770, "color": "#8fbf9c" },
+  { "label": "その他（患者負担等）", "value": 59201, "color": "#a6472c" }
+]
         }
       }
     }
