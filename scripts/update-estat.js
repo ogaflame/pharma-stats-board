@@ -287,19 +287,59 @@ async function extractBreakdown(statsDataId, ind) {
     fixed[`@${id}`] = pick['@code'];
   });
 
-  // 「総数」「合計」など、他の内訳項目を合算しただけの集計行は
-  // 兄弟項目として混入させない（円グラフの母数が狂う原因になるため）
-  const EXCLUDE_LABELS = ['総数', '合計', '計'];
+  // 「総数」「合計」「再掲」など、他の内訳項目を合算・再掲しただけの集計行は
+  // 兄弟項目として混入させない（円グラフの母数が狂う原因になるため）。
+  // ただし「その他_総数」のように、それ以上の内訳を持たない項目まで
+  // 一律に除外すると、その区分自体が丸ごと消えてしまう。
+  // そのため「同じ接頭辞（例：その他＿）を持つ他の項目が実在する場合だけ」
+  // 集計行として除外し、単独で存在する場合は残す（ラベルは接頭辞のみに整形）。
+  const RECAP_KEYWORDS = ['再掲', '小計'];
+  const TOTAL_KEYWORDS = ['総数', '合計'];
+
+  const rawItems = breakdownItems.map((catItem) => ({
+    catItem,
+    label: plain(catItem['@name']).trim(),
+  }));
+
+  // 接頭辞（アンダースコア前）ごとにグルーピングし、兄弟数を把握する。
+  // 「再掲」項目はそもそも除外対象なので、兄弟のカウントには含めない
+  // （でないと「その他_総数」が「その他_患者負担（再掲）」だけを兄弟だと
+  // 誤認して、唯一の内訳であるにもかかわらず除外されてしまう）。
+  const prefixCounts = {};
+  rawItems.forEach(({ label }) => {
+    if (RECAP_KEYWORDS.some((kw) => label.includes(kw))) return;
+    const prefix = label.includes('_') ? label.split('_')[0] : label;
+    prefixCounts[prefix] = (prefixCounts[prefix] || 0) + 1;
+  });
+
   const out = [];
-  breakdownItems.forEach((catItem) => {
-    const label = plain(catItem['@name']);
-    if (EXCLUDE_LABELS.includes(label.trim())) return;
+  rawItems.forEach(({ catItem, label }) => {
+    if (RECAP_KEYWORDS.some((kw) => label.includes(kw))) return; // 再掲は常に除外
+
+    const hasPrefix = label.includes('_');
+    const prefix = hasPrefix ? label.split('_')[0] : null;
+    const isTotalLike = TOTAL_KEYWORDS.some((kw) => label.includes(kw));
+
+    // 接頭辞のない単独の「総数」「合計」は、軸全体の合計値なので必ず除外
+    if (isTotalLike && !hasPrefix) return;
+
+    // 接頭辞つきの「◯◯_総数」は、兄弟項目（◯◯_××）が実在する場合だけ
+    // 親カテゴリの小計とみなして除外する。兄弟が無ければ、それ自体が
+    // 唯一の内訳（葉）なので残す。
+    const hasSiblings = hasPrefix && prefixCounts[prefix] > 1;
+    if (isTotalLike && hasPrefix && hasSiblings) return;
+
+    // 「公費_国庫」→「国庫」のように末尾セグメントを使う。
+    // 「その他_総数」のように単独の集計ラベルは接頭辞側（その他）を使う。
+    let cleanLabel = label;
+    if (hasPrefix) cleanLabel = isTotalLike ? prefix : label.split('_').pop();
+
     const target = { ...fixed, [`@${breakdownAxisId}`]: catItem['@code'], '@time': latestTimeCode };
     const hit = values.find((v) => Object.keys(target).every((k) => v[k] === target[k]));
     if (!hit) return;
     const num = parseNum(hit['$']);
     if (num === null) return;
-    out.push({ label, value: num });
+    out.push({ label: cleanLabel, value: num });
   });
 
   return { year: latestYear, items: out };
