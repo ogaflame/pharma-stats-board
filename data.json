@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-08-01",
+  "generatedAt": "2026-09-01",
   "changeLog": [
     {
       "date": "2026-07-31",
@@ -172,7 +172,7 @@
       "sourceUrl": "https://www.stat.go.jp/data/jinsui/",
       "statsCode": "00200524",
       "cycle": "月次（確定値は5か月後）",
-      "publishedAt": "2026-07-21",
+      "publishedAt": "2026-08-20",
       "publishMonth": 4,
       "nextPublish": "毎月20日前後",
       "note": "各年10月1日現在の総人口。月報では毎月の概算値も公表される。",
@@ -235,12 +235,12 @@
       "sourceUrl": "https://www.mhlw.go.jp/toukei/list/81-1a.html",
       "statsCode": "00450011",
       "cycle": "年次（概数は6月、確定数は9月）",
-      "publishedAt": "2026-08-01",
+      "publishedAt": "2026-09-01",
       "publishMonth": 6,
       "nextPublish": "2026年9月（令和7年確定数）",
       "note": "2025年は概数。確定数の公表で数値が動きます。",
       "series": [
-               [
+        [
           2016,
           977242
         ],
@@ -295,7 +295,7 @@
       "sourceUrl": "https://www.mhlw.go.jp/toukei/list/81-1a.html",
       "statsCode": "00450011",
       "cycle": "年次（概数は6月）",
-      "publishedAt": "2026-08-01",
+      "publishedAt": "2026-09-01",
       "publishMonth": 6,
       "nextPublish": "2026年12月（令和7年 諸率確定）",
       "note": "15〜49歳の女性の年齢別出生率の合計。2025年は概数。",
@@ -490,11 +490,23 @@
               "color": "#3b7a57"
             }
           ],
-"2024": [
-  { "label": "年金", "value": 578528, "color": "#1d5e86" },
-  { "label": "医療", "value": 448055, "color": "#6fa3c2" },
-  { "label": "福祉その他", "value": 356436, "color": "#3b7a57" }
-]
+          "2024": [
+            {
+              "label": "医療",
+              "value": 448055,
+              "color": "#1d5e86"
+            },
+            {
+              "label": "年金",
+              "value": 578528,
+              "color": "#6fa3c2"
+            },
+            {
+              "label": "福祉その他",
+              "value": 356436,
+              "color": "#3b7a57"
+            }
+          ]
         }
       }
     },
@@ -951,12 +963,32 @@
             }
           ],
           "2023": [
-  { "label": "国庫", "value": 119252, "color": "#1d5e86" },
-  { "label": "地方", "value": 61079, "color": "#6fa3c2" },
-  { "label": "事業主", "value": 105613, "color": "#3b7a57" },
-  { "label": "被保険者", "value": 135770, "color": "#8fbf9c" },
-  { "label": "その他（患者負担等）", "value": 59201, "color": "#a6472c" }
-]
+            {
+              "label": "国庫",
+              "value": 119252,
+              "color": "#1d5e86"
+            },
+            {
+              "label": "地方",
+              "value": 61079,
+              "color": "#6fa3c2"
+            },
+            {
+              "label": "事業主",
+              "value": 105613,
+              "color": "#3b7a57"
+            },
+            {
+              "label": "被保険者",
+              "value": 135770,
+              "color": "#8fbf9c"
+            },
+            {
+              "label": "その他",
+              "value": 59201,
+              "color": "#a6472c"
+            }
+          ]
         }
       }
     }
