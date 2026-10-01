@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-09-01",
+  "generatedAt": "2026-10-01",
   "changeLog": [
     {
       "date": "2026-07-31",
@@ -172,7 +172,7 @@
       "sourceUrl": "https://www.stat.go.jp/data/jinsui/",
       "statsCode": "00200524",
       "cycle": "月次（確定値は5か月後）",
-      "publishedAt": "2026-08-20",
+      "publishedAt": "2026-09-24",
       "publishMonth": 4,
       "nextPublish": "毎月20日前後",
       "note": "各年10月1日現在の総人口。月報では毎月の概算値も公表される。",
@@ -235,7 +235,7 @@
       "sourceUrl": "https://www.mhlw.go.jp/toukei/list/81-1a.html",
       "statsCode": "00450011",
       "cycle": "年次（概数は6月、確定数は9月）",
-      "publishedAt": "2026-09-01",
+      "publishedAt": "2026-10-01",
       "publishMonth": 6,
       "nextPublish": "2026年9月（令和7年確定数）",
       "note": "2025年は概数。確定数の公表で数値が動きます。",
@@ -295,7 +295,7 @@
       "sourceUrl": "https://www.mhlw.go.jp/toukei/list/81-1a.html",
       "statsCode": "00450011",
       "cycle": "年次（概数は6月）",
-      "publishedAt": "2026-09-01",
+      "publishedAt": "2026-10-01",
       "publishMonth": 6,
       "nextPublish": "2026年12月（令和7年 諸率確定）",
       "note": "15〜49歳の女性の年齢別出生率の合計。2025年は概数。",
