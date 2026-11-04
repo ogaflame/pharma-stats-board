@@ -113,6 +113,49 @@ async function checkIryouKeizai() {
   };
 }
 
+
+/* ============================================================
+   薬局数（衛生行政報告例・年度報）：厚労省の統計情報ページに「令和◯年度」の
+   最新版が載っているかを確認し、data.json の薬局数の最新年度と比べる。
+   data.json から比較するため、手動で追加すれば自動的にバッジが消える
+   （KNOWN_LATEST の手入れは不要）。
+   ============================================================ */
+async function checkYakkyoku() {
+  const url = 'https://www.mhlw.go.jp/toukei/list/36-19a.html';
+  let text;
+  try {
+    const res = await fetch(url);
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const buf = await res.arrayBuffer();
+    text = toHalfWidthDigits(new TextDecoder('utf-8').decode(buf));
+    if (!/令和\s*\d+\s*年度/.test(text)) text = toHalfWidthDigits(new TextDecoder('shift_jis').decode(buf));
+  } catch (e) {
+    return { ok: false, error: e.message };
+  }
+  const nums = [...text.matchAll(/令和\s*(\d+)\s*年度/g)].map((m) => Number(m[1]));
+  if (!nums.length) return { ok: false, error: '「令和◯年度」の記載が見つかりませんでした（ページ構成が変わった可能性があります）' };
+  const foundReiwa = Math.max(...nums);
+  const foundYear = 2018 + foundReiwa;
+
+  let known = null;
+  try {
+    const dataPath = process.env.DATA_JSON_PATH || path.join(__dirname, '..', 'data.json');
+    const data = JSON.parse(fs.readFileSync(dataPath, 'utf8'));
+    const ind = data.indicators.find((i) => i.id === 'yakkyoku');
+    known = ind.series[ind.series.length - 1][0];
+  } catch (e) {
+    return { ok: false, error: `data.json を読めませんでした: ${e.message}` };
+  }
+  return {
+    ok: true,
+    foundLatestYear: foundYear,
+    label: `令和${foundReiwa}年度`,
+    knownLatestYear: known,
+    hasUpdate: foundYear > known,
+    sourceUrl: url,
+  };
+}
+
 async function main() {
   console.log('=== 社会医療診療行為別統計 ===');
   const chouzai = await checkChouzaiKanteiritsu();
@@ -122,8 +165,13 @@ async function main() {
   const iryoukeizai = await checkIryouKeizai();
   console.log(JSON.stringify(iryoukeizai, null, 2));
 
+  console.log('\n=== 薬局数（衛生行政報告例） ===');
+  const yakkyoku = await checkYakkyoku();
+  console.log(JSON.stringify(yakkyoku, null, 2));
+
   const status = {
     checkedAt: new Date().toISOString(),
+    yakkyoku,
     chouzai_kanteiritsu: chouzai,
     iryou_keizai_yakkyoku: iryoukeizai,
   };
@@ -132,6 +180,7 @@ async function main() {
   console.log(`\n書き出し完了: ${STATUS_PATH}`);
 
   if (chouzai.ok && chouzai.hasUpdate) console.log('\n⚠ 社会医療診療行為別統計：新しい年度が公表されている可能性があります。');
+  if (yakkyoku.ok && yakkyoku.hasUpdate) console.log(`⚠ 薬局数：${yakkyoku.label}が公表されています（data.json は ${yakkyoku.knownLatestYear} 年度まで）。`);
   if (iryoukeizai.ok && iryoukeizai.hasUpdate) console.log('⚠ 医療経済実態調査：新しい調査回が公表されている可能性があります。');
 }
 
