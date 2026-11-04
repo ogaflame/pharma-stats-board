@@ -1190,6 +1190,7 @@ function cardHTML(ind){
   const dec = ind.decimals || 0;
   return `<button class="card" data-id="${ind.id}">
     <span class="cat">${ind.category}</span>
+    ${updateBadgeHTML(ind.id)}
     <h2>${ind.name}</h2>
     <div><span class="val">${fmt(lv, dec)}</span><span class="unit">${ind.unit}</span></div>
     <div class="delta ${d===null?'flat':deltaClass(d)}">
@@ -1291,7 +1292,7 @@ function updateBadgeHTML(key){
   if(!UPDATE_STATUS) return '';
   const s = UPDATE_STATUS[key];
   if(!s || !s.ok || !s.hasUpdate) return '';
-  const label = s.foundLatestYear ? `${s.foundLatestYear}年` : (s.foundLatestRound ? `第${s.foundLatestRound}回` : '新しい版');
+  const label = s.label ? s.label : s.foundLatestYear ? `${s.foundLatestYear}年` : (s.foundLatestRound ? `第${s.foundLatestRound}回` : '新しい版');
   return `<span class="update-badge" title="確認日時：${UPDATE_STATUS.checkedAt || ''}">新着　${label}が公開されています</span>`;
 }
 
