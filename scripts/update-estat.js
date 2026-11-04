@@ -439,6 +439,7 @@ async function main() {
         continue;
       }
 
+      console.log(`  → 表から実際に取得できた年: ${rawSeries[0][0]}〜${rawSeries[rawSeries.length - 1][0]}（${rawSeries.length}件、最新=${rawSeries[rawSeries.length - 1].join('=')}）`);
       let series = rawSeries;
       if (ind.unitDivide && ind.unitDivide !== 1) {
         series = series.map(([y, v]) => [y, Math.round((v / ind.unitDivide) * 10) / 10]);
