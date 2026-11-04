@@ -79,24 +79,58 @@ async function findCandidates() {
 
 const toHalf = (s) => String(s).replace(/[０-９]/g, (c) => String.fromCharCode(c.charCodeAt(0) - 0xFEE0));
 
-function parseWorkbook(buf) {
+const findYearIn = (text) => {
+  const t = toHalf(text).replace(/\s/g, '');
+  const ym = t.match(/(令和|平成)(元|\d+)年度/);
+  if (ym) return (ym[1] === '令和' ? 2018 : 1988) + (ym[2] === '元' ? 1 : Number(ym[2]));
+  const m2 = t.match(/(20\d\d)年度/);
+  return m2 ? Number(m2[1]) : null;
+};
+
+/**
+ * Excel の構造（確認済み）：
+ *   - 見出し行（4行目付近）に「薬局数」と書かれた列がある（B4）
+ *   - 全国の値はその列の中にある（令和7年度版=B7、令和6年度版以前=B8 と行がずれる）
+ * → 行番号に頼らず、「薬局数」見出しの列を探し、その列の中の最大値（＝全国）を採用する。
+ *   都道府県の値は全国より必ず小さいため、最大値が全国になる。
+ */
+function parseWorkbook(buf, debug, hintText) {
   const XLSX = require('xlsx');
   const wb = XLSX.read(buf, { type: 'buffer' });
-  for (const name of wb.SheetNames) {
-    const rows = XLSX.utils.sheet_to_json(wb.Sheets[name], { header: 1, defval: '' });
-    const joined = toHalf(rows.slice(0, 8).map((r) => r.join(' ')).join(' '));
-    // 例: 「令和7年度末現在」→ 2025
-    const ym = joined.match(/(令和|平成)\s*(元|\d+)\s*年度/);
-    if (!ym) continue;
-    const n = ym[2] === '元' ? 1 : Number(ym[2]);
-    const year = (ym[1] === '令和' ? 2018 : 1988) + n;
-    for (const r of rows) {
-      const head = toHalf(String(r[0] || r[1] || '')).replace(/\s/g, '');
-      if (!/^(全国|総数|合計)/.test(head)) continue;
-      const nums = r.map((c) => (typeof c === 'number' ? c : Number(toHalf(String(c)).replace(/[,\s]/g, ''))))
-        .filter((n) => Number.isFinite(n) && n >= 10000);
-      if (nums.length) return { year, value: nums[0], sheet: name };
+  const sheets = wb.SheetNames.map((name) => ({
+    name, rows: XLSX.utils.sheet_to_json(wb.Sheets[name], { header: 1, defval: '' }),
+  }));
+  const allText = sheets.map((sh) => sh.name + ' ' + sh.rows.slice(0, 30).map((r) => r.join(' ')).join(' ')).join(' ');
+  const year = findYearIn(allText) || findYearIn(hintText || '');
+  const num = (c) => (typeof c === 'number' ? c : Number(toHalf(String(c)).replace(/[,\s]/g, '')));
+
+  for (const sh of sheets) {
+    // 見出しセル：先頭12行の中で「薬局数」を含み「無薬局」を含まないもの
+    let hdr = null;
+    for (let i = 0; i < Math.min(12, sh.rows.length) && !hdr; i++) {
+      for (let j = 0; j < sh.rows[i].length; j++) {
+        const t = toHalf(String(sh.rows[i][j])).replace(/\s/g, '');
+        if (t.includes('薬局数') && !t.includes('無薬局')) { hdr = { i, j }; break; }
+      }
     }
+    if (!hdr) continue;
+    let best = null;
+    for (let i = hdr.i + 1; i < sh.rows.length; i++) {
+      const v = num(sh.rows[i][hdr.j]);
+      if (Number.isFinite(v) && v >= 10000 && (!best || v > best.v)) best = { v, row: i + 1 };
+    }
+    if (best && year) {
+      const col = String.fromCharCode(65 + hdr.j);
+      return { year, value: best.v, sheet: sh.name, cell: `${col}${best.row}` };
+    }
+    if (best && !year) console.log(`  年度が判定できませんでした（値は ${best.v}）`);
+  }
+  if (debug) {
+    console.log(`  [診断] シート: ${wb.SheetNames.join(' / ')}  / 年度判定=${year}`);
+    sheets.slice(0, 3).forEach((sh) => {
+      console.log(`  [診断] シート「${sh.name}」の先頭15行:`);
+      sh.rows.slice(0, 15).forEach((r, i) => console.log(`    ${i + 1}: ${r.slice(0, 8).map((c) => String(c).slice(0, 20)).join(' | ')}`));
+    });
   }
   return null;
 }
@@ -109,7 +143,7 @@ async function backfill(cands) {
     try {
       const res = await fetch(c.url);
       if (!res.ok) { console.log(`  取得失敗 HTTP ${res.status}: ${c.url}`); continue; }
-      const p = parseWorkbook(Buffer.from(await res.arrayBuffer()));
+      const p = parseWorkbook(Buffer.from(await res.arrayBuffer()), c === cands[0], c.text);
       if (!p) { console.log(`  読み取れず: ${c.url}`); continue; }
       if (!byYear.has(p.year)) byYear.set(p.year, { value: p.value, url: c.url });
     } catch (e) { console.log(`  エラー ${e.message}: ${c.url}`); }
@@ -155,13 +189,13 @@ async function main() {
     try {
       const res = await fetch(c.url);
       if (!res.ok) { console.log(`  取得失敗 HTTP ${res.status}: ${c.url}`); continue; }
-      const p = parseWorkbook(Buffer.from(await res.arrayBuffer()));
+      const p = parseWorkbook(Buffer.from(await res.arrayBuffer()), c === cands[0], c.text);
       if (p) { parsed = { ...p, url: c.url }; break; }
       console.log(`  読み取れず: ${c.url}`);
     } catch (e) { console.log(`  エラー ${e.message}: ${c.url}`); }
   }
   if (!parsed) { console.error('✗ どのファイルからも薬局数を読み取れませんでした'); process.exit(1); }
-  console.log(`→ 読み取り: ${parsed.year}年度 = ${parsed.value}（${parsed.url}）`);
+  console.log(`→ 読み取り: ${parsed.year}年度 = ${parsed.value}（セル ${parsed.cell}、${parsed.url}）`);
 
   const prev = target.series.find(([y]) => y === parsed.year - 1);
   if (prev && Math.abs(parsed.value / prev[1] - 1) > MAX_CHANGE_RATIO) {
