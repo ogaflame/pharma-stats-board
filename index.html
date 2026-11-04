@@ -257,6 +257,8 @@ table.series tr:first-child td{background:#fff}
 .db-purpose{max-width:280px;border-left:2px solid var(--rule2);padding-left:16px}
 .update-badge{display:inline-block;font-family:var(--fig);font-size:9.5px;letter-spacing:.06em;
   color:#fff;background:var(--bengara);padding:2px 8px;border-radius:2px;margin:0 0 8px}
+.card .update-badge{align-self:flex-start;margin:6px 0 0}
+.update-badge.done{background:var(--ai,#1d5e86)}
 .db-purpose .k{font-size:10.5px;color:var(--ink3);letter-spacing:.06em;margin-bottom:5px}
 .db-purpose p{margin:0;font-size:11.5px;line-height:1.75;color:var(--ink2)}
 @media(max-width:700px){.db-card{grid-template-columns:1fr}.db-figs{gap:20px}.db-purpose{max-width:none;border-left:none;border-top:2px solid var(--rule2);padding-left:0;padding-top:12px}}
@@ -1190,7 +1192,7 @@ function cardHTML(ind){
   const dec = ind.decimals || 0;
   return `<button class="card" data-id="${ind.id}">
     <span class="cat">${ind.category}</span>
-    ${updateBadgeHTML(ind.id)}
+    ${updateBadgeHTML(ind.id) || recentBadgeHTML(ind)}
     <h2>${ind.name}</h2>
     <div><span class="val">${fmt(lv, dec)}</span><span class="unit">${ind.unit}</span></div>
     <div class="delta ${d===null?'flat':deltaClass(d)}">
@@ -1294,6 +1296,18 @@ function updateBadgeHTML(key){
   if(!s || !s.ok || !s.hasUpdate) return '';
   const label = s.label ? s.label : s.foundLatestYear ? `${s.foundLatestYear}年` : (s.foundLatestRound ? `第${s.foundLatestRound}回` : '新しい版');
   return `<span class="update-badge" title="確認日時：${UPDATE_STATUS.checkedAt || ''}">新着　${label}が公開されています</span>`;
+}
+
+/* ---------- 更新済みバッジ（公表日から約3か月間、青で表示） ---------- */
+const RECENT_DAYS = 92;
+function recentBadgeHTML(ind){
+  // 未取り込みの「新着」バッジ（赤）が出ている間は出さない
+  if(UPDATE_STATUS && UPDATE_STATUS[ind.id] && UPDATE_STATUS[ind.id].hasUpdate) return '';
+  const d = new Date(ind.publishedAt);
+  const days = (Date.now() - d.getTime()) / 86400000;
+  if(isNaN(days) || days < 0 || days > RECENT_DAYS) return '';
+  const ly = latest(ind)[0];
+  return `<span class="update-badge done" title="公表日：${ind.publishedAt}">${wareki(ly, ind.periodKind)}が更新されました</span>`;
 }
 
 function matrixCardHTML(db){
