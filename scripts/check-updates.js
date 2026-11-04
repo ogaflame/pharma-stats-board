@@ -128,14 +128,19 @@ async function checkYakkyoku() {
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const buf = await res.arrayBuffer();
     text = toHalfWidthDigits(new TextDecoder('utf-8').decode(buf));
-    if (!/令和\s*\d+\s*年度/.test(text)) text = toHalfWidthDigits(new TextDecoder('shift_jis').decode(buf));
+    if (!/令和/.test(text)) text = toHalfWidthDigits(new TextDecoder('shift_jis').decode(buf));
   } catch (e) {
     return { ok: false, error: e.message };
   }
-  const nums = [...text.matchAll(/令和\s*(\d+)\s*年度/g)].map((m) => Number(m[1]));
-  if (!nums.length) return { ok: false, error: '「令和◯年度」の記載が見つかりませんでした（ページ構成が変わった可能性があります）' };
-  const foundReiwa = Math.max(...nums);
-  const foundYear = 2018 + foundReiwa;
+  // 「令和7年度」「令和7(2025)年度」「令和７（2025）年度」「2025年度」のいずれの書き方でも拾う
+  const years = [];
+  for (const m of text.matchAll(/令和\s*(元|\d+)\s*(?:[（(]\s*(\d{4})\s*年?\s*[）)]\s*)?年度/g)) {
+    years.push(m[2] ? Number(m[2]) : 2018 + (m[1] === '元' ? 1 : Number(m[1])));
+  }
+  for (const m of text.matchAll(/(20\d{2})\s*年度/g)) years.push(Number(m[1]));
+  if (!years.length) return { ok: false, error: '「令和◯年度」の記載が見つかりませんでした（ページ構成が変わった可能性があります）' };
+  const foundYear = Math.max(...years);
+  const foundReiwa = foundYear - 2018;
 
   let known = null;
   try {
