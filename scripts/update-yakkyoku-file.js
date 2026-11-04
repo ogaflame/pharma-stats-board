@@ -26,13 +26,26 @@ const MAX_CHANGE_RATIO = 0.05; // 前年度比±5%を超えたら読み違いと
 
 if (!APP_ID) { console.error('環境変数 ESTAT_APP_ID が設定されていません。'); process.exit(1); }
 
-async function getCatalog() {
-  const qs = new URLSearchParams({
-    appId: APP_ID, statsCode: STATS_CODE, searchWord: '薬局数', limit: '200',
-  });
-  const res = await fetch(`https://api.e-stat.go.jp/rest/3.0/app/json/getDataCatalog?${qs}`);
-  if (!res.ok) throw new Error(`HTTP ${res.status}`);
-  return res.json();
+async function getCatalogPages() {
+  // 1回の上限は100件。NEXT_KEY があれば続きを取得（最大10ページ）
+  const pages = [];
+  let start = 1;
+  for (let i = 0; i < 10; i++) {
+    const qs = new URLSearchParams({
+      appId: APP_ID, statsCode: STATS_CODE, searchWord: '薬局数', limit: '100', startPosition: String(start),
+    });
+    const res = await fetch(`https://api.e-stat.go.jp/rest/3.0/app/json/getDataCatalog?${qs}`);
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const json = await res.json();
+    const result = (json.GET_DATA_CATALOG || {}).RESULT;
+    if (result && Number(result.STATUS) !== 0) throw new Error(`e-Stat エラー ${result.STATUS}: ${result.ERROR_MSG}`);
+    pages.push(json);
+    const inf = ((json.GET_DATA_CATALOG || {}).DATA_CATALOG_LIST_INF) || {};
+    const next = inf.NEXT_KEY || ((json.GET_DATA_CATALOG || {}).PARAMETER || {}).NEXT_KEY;
+    if (!next) break;
+    start = Number(next);
+  }
+  return pages;
 }
 
 // 応答の構造に依存しすぎないよう、JSON全体を走査して「URLを持つ要素」を集める
@@ -54,11 +67,9 @@ function statInfId(url) {
 }
 
 async function findCandidates() {
-  const json = await getCatalog();
-  const result = (json.GET_DATA_CATALOG || {}).RESULT;
-  if (result && Number(result.STATUS) !== 0) throw new Error(`e-Stat エラー ${result.STATUS}: ${result.ERROR_MSG}`);
+  const pages = await getCatalogPages();
   const found = [];
-  collectResources(json, found, []);
+  collectResources(pages, found, []);
   // 「薬局数」と「都道府県」を含み、Excel形式のもの
   const cands = found.filter((r) => r.text.includes('薬局数') && r.text.includes('都道府県') && !/PDF|CSV/i.test(r.text.slice(0, 0)));
   const uniq = new Map();
