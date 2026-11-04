@@ -259,6 +259,8 @@ table.series tr:first-child td{background:#fff}
   color:#fff;background:var(--bengara);padding:2px 8px;border-radius:2px;margin:0 0 8px}
 .card .update-badge{align-self:flex-start;margin:6px 0 0}
 .update-badge.done{background:var(--ai,#1d5e86)}
+.cnote{margin-top:8px;font-size:10.5px;line-height:1.6;color:var(--ink3)}
+.cnote.done{color:var(--ai,#1d5e86)}
 .db-purpose .k{font-size:10.5px;color:var(--ink3);letter-spacing:.06em;margin-bottom:5px}
 .db-purpose p{margin:0;font-size:11.5px;line-height:1.75;color:var(--ink2)}
 @media(max-width:700px){.db-card{grid-template-columns:1fr}.db-figs{gap:20px}.db-purpose{max-width:none;border-left:none;border-top:2px solid var(--rule2);padding-left:0;padding-top:12px}}
@@ -451,6 +453,19 @@ table.matrix td.dim{color:var(--ink3)}
 
 footer.site{border-top:1px solid var(--rule2);padding:20px 0 60px;font-size:11.5px;color:var(--ink3)}
 footer.site .f{font-family:var(--fig)}
+footer.site .foot-row{display:flex;justify-content:space-between;align-items:flex-end;gap:20px;flex-wrap:wrap}
+footer.site .guide-link{margin-left:auto;font-family:var(--body);font-size:11.5px;color:var(--ink2);text-decoration:none;border-bottom:1px solid var(--rule2);padding-bottom:1px;white-space:nowrap}
+footer.site .guide-link:hover{color:var(--ink)}
+.guide{max-width:820px}
+.guide h3{font-family:var(--display);font-size:16px;letter-spacing:.08em;margin:34px 0 10px;padding-bottom:6px;border-bottom:1px solid var(--rule2)}
+.guide p,.guide li{font-size:13px;line-height:1.9;color:var(--ink2)}
+.guide ol,.guide ul{padding-left:1.4em;margin:8px 0}
+.guide code{font-family:var(--fig);font-size:12px;background:var(--raised);border:1px solid var(--rule);padding:0 5px}
+.guide pre{font-family:var(--fig);font-size:12px;background:var(--raised);border:1px solid var(--rule);padding:12px 14px;overflow:auto;line-height:1.6}
+.guide table{width:100%;border-collapse:collapse;font-size:12.5px;margin:10px 0}
+.guide th,.guide td{border:1px solid var(--rule);padding:8px 10px;text-align:left;vertical-align:top;line-height:1.7;color:var(--ink2)}
+.guide th{background:var(--raised);color:var(--ink);font-weight:500}
+
 
 @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
 </style>
@@ -499,9 +514,10 @@ footer.site .f{font-family:var(--fig)}
   <section id="detail" aria-live="polite"></section>
 </main>
 
-<footer class="site"><div class="wrap">
-  出典はいずれも各府省の公表資料。数値は <span class="f">data.json</span> から読み込みます。
-  ファイルが無い場合は組み込みの初期値を表示します。
+<footer class="site"><div class="wrap foot-row">
+  <div>出典はいずれも各府省の公表資料。数値は <span class="f">data.json</span> から読み込みます。
+  ファイルが無い場合は組み込みの初期値を表示します。</div>
+  <a class="guide-link" href="#/guide">更新手順（薬局数）</a>
 </div></footer>
 
 <script>
@@ -1180,6 +1196,39 @@ function freshness(ind){
   return {cls:'fresh', label:'最新'};
 }
 
+
+/* ---------- 総人口：国勢調査との関係の注記 ----------
+   data.json の jinko に "censusBase": 2025 を入れると「補間補正済み」の表示に切り替わる
+   （未設定なら令和2年国勢調査を基準とする推計＝反映待ち、として表示）            */
+function censusNote(ind){
+  if(ind.id !== 'jinko') return null;
+  const done = Number(ind.censusBase) >= 2025;
+  return done
+    ? {done:true,  text:'令和7年国勢調査を基準に補間補正済み'}
+    : {done:false, text:'令和2年国勢調査を基準とする推計（令和7年国勢調査の反映待ち）'};
+}
+function censusNoteCardHTML(ind){
+  const n = censusNote(ind);
+  return n ? `<div class="cnote ${n.done?'done':''}">${n.text}</div>` : '';
+}
+function censusExplainHTML(ind){
+  const n = censusNote(ind);
+  if(!n) return '';
+  return `
+    <h3 class="sec">この数値について</h3>
+    <div class="guide" style="max-width:none">
+      <p>ここに表示しているのは、総務省「人口推計」の<strong>10月1日現在（年報）</strong>の総人口です。外国人を含みます。毎月公表される月報（概算値・確定値）の数値は載せていません。10月1日現在の確定値は、翌年の春ごろに公表されます。</p>
+      <ul>
+        <li>0と5のつく年（2020年、2025年）は、国勢調査の結果が、その年の10月1日現在の人口になります。</li>
+        <li>国勢調査の間の年（2021〜2024年）は、前回の国勢調査（2020年）を基準にした推計値です。</li>
+        <li>次の国勢調査（2025年）の結果が反映されると、間の年の推計値は、2つの調査の間をつなぐように修正されます。これを「補間補正」と呼びます。</li>
+      </ul>
+      <p><strong>現在の状況：</strong>${n.done
+        ? '令和7年国勢調査の結果を基準とする推計に切り替わり、2021〜2024年の値は補間補正済みです。'
+        : '表の数値は、令和2年国勢調査を基準とする推計です。令和7年国勢調査の結果（2026年9月29日公表）を反映した推計が公表されると、2025年の値が国勢調査の値に置き換わり、2021〜2024年の値も修正されます。'}</p>
+    </div>`;
+}
+
 /* ---------- 一覧カード ---------- */
 const GROUP_ORDER = ["薬局", "認定薬局", "人口", "社会保障"];
 
@@ -1199,6 +1248,7 @@ function cardHTML(ind){
       ${d===null ? '—' : deltaText(d, dec) + (rate!==null ? '（' + (rate>=0?'+':'−') + Math.abs(rate).toFixed(1) + '%）' : '')}
       <span style="color:var(--ink3)"> 前${ind.periodKind==='年度'?'年度':'回'}比</span>
     </div>
+    ${censusNoteCardHTML(ind)}
     <div class="meta">
       ${wareki(ly, ind.periodKind)}（${periodLabel(ind, ly)}）<br>
       <span class="pip ${f.cls}"></span><span class="pubdate">${ind.publishedAt}</span> 公表 ・ ${f.label}
@@ -1541,6 +1591,7 @@ function renderDetail(id){
       <thead><tr><th>期間</th><th>${ind.name}</th><th>前回差</th><th>増減率</th></tr></thead>
       <tbody>${rows}</tbody>
     </table>
+    ${censusExplainHTML(ind)}
     ${ind.financing ? `
     <h3 class="sec">${ind.financing.title || '財源・部門別内訳'}</h3>
     <div class="fin-block">
@@ -2515,10 +2566,94 @@ function downloadUpdatedData(){
 }
 
 /* ---------- ルーティング ---------- */
+
+/* ---------- 更新手順（薬局数）ページ ---------- */
+function renderGuide(){
+  $('#detail').innerHTML = `
+    <button class="back" id="backBtn">← 一覧へ戻る</button>
+    <div class="d-head">
+      <span class="cat">運用メモ</span>
+      <h2>薬局数の更新手順</h2>
+    </div>
+    <div class="guide">
+      <p>薬局数は、年1回（10月下旬ごろの公表後）に <code>data.json</code> へ1行足す手動更新です。公表されると、薬局数のカードに赤い「新着」バッジが出るので、それを合図に作業します。</p>
+
+      <h3>更新の流れ</h3>
+      <ol>
+        <li>薬局数のカードに赤い「新着　令和◯年度が公開されています」が出たら、作業を始めます。</li>
+        <li>e-Stat の「衛生行政報告例」ファイル一覧で、最新年度の「第１表 薬局数・無薬局町村数・登録販売者数，都道府県別」（CSV。Excel で開けます）を開きます。</li>
+        <li>見出し「薬局数」の列にある、全国の値を読み取ります（下の「CSV の読み方」を参照）。</li>
+        <li>GitHub で <code>data.json</code> を開き、<code>yakkyoku</code> の <code>series</code> の最後に <code>[年, 値]</code> を足します。<strong>あわせて <code>publishedAt</code> を公表日に書き換えます（忘れやすいので注意）。</strong></li>
+        <li>「Commit changes」で保存します。</li>
+        <li>Actions の「Check reference database updates」を手動実行します（Run workflow）。数分後に再読み込みすると、赤いバッジが消え、青い「令和◯年度が更新されました」が約3か月間出ます。</li>
+      </ol>
+      <p>実行中は、GitHub 上でほかのファイルを編集しないでください。保存（push）が拒否される原因になります。</p>
+
+      <h3>data.json への追加例</h3>
+      <p>令和7年度（2025年度）の場合です。直前の行の末尾にカンマを付け忘れると、ボード全体が表示されなくなります。</p>
+      <pre>[
+  2024,
+  63203
+],
+[
+  2025,
+  63417
+]</pre>
+      <p><code>publishedAt</code> は <code>"2026-10-27"</code> のように、公表日を入れます。</p>
+      <p><strong>値を足したら、必ず <code>publishedAt</code> も更新してください。</strong>これを更新しないと、カードの公表日が古いままになり、青い「令和◯年度が更新されました」のバッジも出ません。バッジは、公表日から約3か月間だけ表示されます。</p>
+
+      <h3>取得元と CSV の読み方</h3>
+      <ul>
+        <li>公表ページ：<a href="https://www.mhlw.go.jp/toukei/list/36-19a.html" target="_blank" rel="noopener">衛生行政報告例（厚生労働省）</a>。令和7年度は2026年10月27日に公表されました。</li>
+        <li>数値の取得元：e-Stat の「年度報」→「薬事」の CSV ファイル。令和7年度の全国値は 63,417 施設でした。</li>
+        <li>ファイルは CSV 形式で、日本語は Shift-JIS で保存されています。</li>
+        <li>Excel で開いたとき、B4 のセルが見出し「薬局数」です。全国の値は同じ B 列にあり、令和7年度版は B7、令和6年度版以前は B8 です。年度でレイアウトが変わることがあるため、行の位置は毎回確認してください。</li>
+        <li>都道府県の値は全国より小さいので、B 列で最大の値が全国です。</li>
+      </ul>
+
+      <h3>自動更新にしていない理由</h3>
+      <ul>
+        <li>e-Stat のデータベース版は、公表から何年も遅れて追加されます。確認した時点で、一覧には2021年度までしかありませんでした。</li>
+        <li>CSV を自動で読む方法も試しました。文字コード（Shift-JIS）の指定が必要で、年度ごとに全国の行の位置が変わります。年1回の更新のために壊れやすい仕組みを保つより、手動のほうが確実と判断しました。</li>
+        <li>更新があったことは、新着バッジで気づけます。</li>
+      </ul>
+
+      <h3>うまくいかないとき</h3>
+      <table>
+        <tr><th>症状</th><th>原因</th><th>対処</th></tr>
+        <tr><td>新着バッジが出ない</td><td>更新確認が未実行、または古いファイル</td><td>Actions で「Check reference database updates」を手動実行。<code>scripts/check-updates.js</code> に <code>checkYakkyoku</code> があるか確認</td></tr>
+        <tr><td>確認のログが「令和5年度」など古い年度になる</td><td>厚労省ページの年度の書き方が想定と違った。「令和7(2025)年度」のように西暦が入る書き方が原因と推定</td><td><code>check-updates.js</code> は「令和7年度」「令和7(2025)年度」「2025年度」のいずれも読むよう修正済み。再発したら、ページの表記を確認して調整</td></tr>
+        <tr><td>保存（push）が rejected になる</td><td>実行中に別の変更が GitHub に入った</td><td>ワークフローの最後に <code>git pull --rebase</code> を入れてある。それでも出たら、もう一度実行</td></tr>
+        <tr><td>値は更新したのに、青い「更新されました」が出ない</td><td><code>publishedAt</code> が古い日付のまま（公表日から約3か月を超えている）</td><td>data.json の <code>yakkyoku</code> の <code>publishedAt</code> を、公表日に書き換える。カード下の公表日の表示でも確認できる</td></tr>
+        <tr><td>ボードが真っ白になる</td><td>data.json のカンマ・括弧のずれ</td><td>直前の編集を取り消し、追加した行を確認</td></tr>
+      </table>
+
+      <h3>総人口の注記を切り替えるとき</h3>
+      <p>総人口のカードと詳細ページには、国勢調査との関係の注記が出ます。初期状態は「令和2年国勢調査を基準とする推計（令和7年国勢調査の反映待ち）」です。</p>
+      <p>総務省が令和7年国勢調査を基準とする推計を公表し、ボードの値が修正されたことを確認したら、data.json の <code>jinko</code> に <code>"censusBase": 2025</code> を1行足してください。注記が「令和7年国勢調査を基準に補間補正済み」に変わります。数値そのものは、毎月の自動更新で置き換わります。</p>
+
+      <h3>関連ファイル</h3>
+      <table>
+        <tr><th>ファイル</th><th>場所</th><th>役割</th></tr>
+        <tr><td>data.json</td><td>リポジトリのトップ</td><td>薬局数を含む指標の値</td></tr>
+        <tr><td>scripts/check-updates.js</td><td>scripts</td><td>更新の有無を確認し、updates-status.json に書き出す</td></tr>
+        <tr><td>.github/workflows/check-updates.yml</td><td>.github/workflows</td><td>毎月1日 9:30（日本時間）の自動確認と、手動実行</td></tr>
+        <tr><td>updates-status.json</td><td>リポジトリのトップ</td><td>確認結果。バッジが参照する</td></tr>
+        <tr><td>index.html</td><td>リポジトリのトップ</td><td>ボード本体。赤（新着）と青（更新済み）のバッジを表示</td></tr>
+      </table>
+    </div>`;
+  $('#backBtn').addEventListener('click', () => { location.hash = ''; });
+}
+
 function route(){
   const dbm = location.hash.match(/^#\/db\/(.+)$/);
   const m = location.hash.match(/^#\/(.+)$/);
-  if(dbm){
+  if(location.hash === '#/guide'){
+    $('#summary').style.display = 'none';
+    $('#detail').classList.add('on');
+    renderGuide();
+    window.scrollTo({top: 0, behavior: 'instant'});
+  }else if(dbm){
     $('#summary').style.display = 'none';
     $('#detail').classList.add('on');
     const db = (DATA.databases || []).find(d => d.id === dbm[1]);
