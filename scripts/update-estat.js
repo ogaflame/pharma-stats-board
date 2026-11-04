@@ -476,10 +476,15 @@ async function main() {
         series = series.slice(-ind.truncateYears);
       }
 
+      const changed = JSON.stringify(series) !== JSON.stringify(target.series);
       target.series = series;
-      target.publishedAt = table.openDate;
+      // 公表日は「実際に値が変わった時」だけ更新する
+      // （表番号直接指定の指標では openDate が実行日になるため、毎回上書きすると誤解を招く）
+      if (changed && !ind.hardcodedStatsDataId) target.publishedAt = table.openDate;
+      if (changed && ind.hardcodedStatsDataId) target.publishedAt = new Date().toISOString().slice(0, 10);
       const newLast = series[series.length - 1];
       const added = series.length - prevCount;
+      console.log(changed ? '  → 値に変更あり' : '  → 変更なし（e-Stat側に新しいデータがありません）');
       console.log(`  → 更新: ${prevLast ? prevLast.join('=') : '(なし)'} → ${newLast.join('=')}　（保持年数: ${series.length}、新規追加: ${Math.max(added, 0)}件）`);
 
       let breakdownInfo = null;
@@ -497,7 +502,7 @@ async function main() {
         }
       }
 
-      summary.push({ id: ind.id, status: 'updated', latest: newLast, breakdown: breakdownInfo });
+      summary.push({ id: ind.id, status: changed ? 'updated' : 'unchanged', latest: newLast, breakdown: breakdownInfo });
     } catch (e) {
       console.error(`  ✗ エラー: ${e.message}`);
       summary.push({ id: ind.id, status: 'error', message: e.message });
@@ -515,6 +520,7 @@ async function main() {
   const failed = summary.filter((s) => s.status === 'error' || s.status === 'not_found');
   if (failed.length) {
     console.warn(`\n⚠ ${failed.length}件、取得できなかった指標があります。ログを確認してください。`);
+    process.exitCode = 1; // Actionsを赤にして見落としを防ぐ（data.jsonは保存済み）
   }
 }
 
