@@ -26,7 +26,16 @@ jobs:
           ESTAT_APP_ID: ${{ secrets.ESTAT_APP_ID }}
         run: node scripts/update-estat.js
 
+      - name: Run 薬局数 file update (Excel)
+        if: always()
+        env:
+          ESTAT_APP_ID: ${{ secrets.ESTAT_APP_ID }}
+        run: |
+          npm install --no-save xlsx@0.18.5
+          node scripts/update-yakkyoku-file.js
+
       - name: Commit and push if changed
+        if: always()
         run: |
           git config user.name "estat-bot"
           git config user.email "actions@users.noreply.github.com"
