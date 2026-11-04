@@ -1,5 +1,13 @@
 {
-  "checkedAt": "2026-11-01T06:40:38.629Z",
+  "checkedAt": "2026-11-04T03:28:49.145Z",
+  "yakkyoku": {
+    "ok": true,
+    "foundLatestYear": 2023,
+    "label": "令和5年度",
+    "knownLatestYear": 2024,
+    "hasUpdate": false,
+    "sourceUrl": "https://www.mhlw.go.jp/toukei/list/36-19a.html"
+  },
   "chouzai_kanteiritsu": {
     "ok": true,
     "foundLatestYear": 2025,
